@@ -1,0 +1,836 @@
+#Library4
+TLP Simple
+#Revision
+0
+#LibOwner
+daveh
+#LibModStamp
+2024/08/11 9:39
+#LibIncPath
+C:\Documents and Settings\david heckeroth\Desktop\Aion\TLP Worksjop\TLP Simple - Day 1\
+#Includes
+syslib-C
+datalib-C
+winlib-C
+TLPrule
+simple
+
+#Class
+Main syslib:_System
+#Entry Class
+True
+#CLSID
+{FEE8E159-A22D-4E90-98B2-6D7A4A1A2EA4}
+#Automation IID
+{D1677CA4-901E-4F17-8B50-E43466418501}
+#Event IID
+{9DCEAF25-395A-4DCD-B7D4-FB8FD0D890ED}
+
+#Attribute
+pApp Main
+#Type
+pointer to AppWindow
+#Initial Value
+NULL
+#Static
+True
+
+#Method
+Start Main
+#Static
+True
+#Return Type
+integer
+#Method Body
+// Create and open the application window
+pApp = AppWindow.Create()
+
+FillTestValues()
+
+pApp.OpenApp()
+return(0)
+
+#Class
+Coverage syslib:_Object
+
+#Attribute
+coverageIndustry Coverage
+#Type
+string
+#Initial Value
+
+#User Tags
+PP_PPLUS = editonly "3B117F250000003600000002"
+
+
+#Attribute
+coverageLiability Coverage
+#Comment
+malpractise,workers comp, building, contents
+#Type
+string
+#Initial Value
+NULL
+#User Tags
+PP_PPLUS = editonly "3B117F250000003A00000002"
+
+
+#Attribute
+coverageType Coverage
+#Comment
+e.g. Medical, construction, demolition, biotech, retail store
+#Type
+string
+#Initial Value
+NULL
+#User Tags
+PP_PPLUS = editonly "3B117F250000003800000002"
+
+
+#Method
+RulesAboutCoverage Coverage
+#Static
+True
+#Return Type
+
+#Method Body
+rule "CL1 Property Rules"
+ifrule cvg.coverageType  = "Building"
+then
+	cvg.coverageLiability = "Medium"
+end
+rule "CL2 Property Rules"
+ifrule cvg.coverageType  = "Malpractice"
+   and cvg.coverageIndustry = "Medical"
+then
+	cvg.coverageLiability = "High"
+end
+rule "CL3 Property Rules"
+ifrule cvg.coverageType  = "Malpractice"
+   and cvg.coverageIndustry = "Construction"
+then
+	cvg.coverageLiability = "Medium"
+end
+rule "CL4 Property Rules"
+ifrule cvg.coverageType  = "Malpractice"
+   and cvg.coverageIndustry = "Retail"
+then
+	cvg.coverageLiability = "Low"
+end
+#User Tags
+PP_PPLUS = editonly "3B117F250000004400000002"
+
+
+#Instance
+cvg Coverage
+
+#Class
+Customer syslib:_Object
+
+#Attribute
+bankruptcies Customer
+#Type
+integer
+#Initial Value
+
+#User Tags
+PP_PPLUS = editonly "3B117F250000004C00000002"
+
+
+#Attribute
+financialStability Customer
+#Type
+string
+#Initial Value
+
+#User Tags
+PP_PPLUS = editonly "3B117F250000004800000002"
+
+
+#Attribute
+name Customer
+#Access
+Protected
+#Type
+string
+#Initial Value
+NULL
+#User Tags
+PP_PPLUS = editonly "3B117F250000005000000002"
+
+
+#Attribute
+years_At_Current_Address Customer
+#Type
+integer
+#Initial Value
+NULL
+#User Tags
+PP_PPLUS = editonly "3B117F250000004A00000002"
+
+
+#Attribute
+years_In_Business Customer
+#Type
+integer
+#Initial Value
+NULL
+#User Tags
+PP_PPLUS = editonly "3B117F250000004E00000002"
+
+
+#Method
+RulesAboutFinancialStability Customer
+#Static
+True
+#Return Type
+
+#Method Body
+rule "FS1 Poor"
+ifrule cust.Years_In_Business < 1
+then
+	cust.financialStability = "Poor"
+end
+
+rule "FS2 Average,Low"
+ifrule cust.Years_In_Business > 0  AND cust.Years_In_Business < 6
+   AND cust.bankruptcies = 0
+   AND cust.years_at_current_address > 4
+then
+	cust.financialStability = "Average"
+end
+
+rule "FS3 "
+ifrule cust.Years_In_Business > 5
+   AND cust.bankruptcies < 1
+then
+	cust.financialStability = "Excellent"
+end
+#User Tags
+PP_PPLUS = editonly "3B117F250000007700000002"
+
+
+#Instance
+cust Customer
+
+#Attribute Value
+bankruptcies cust
+#Value
+0
+
+#Attribute Value
+name cust
+#Value
+"C1"
+
+#Attribute Value
+years_At_Current_Address cust
+#Value
+15
+
+#Attribute Value
+years_In_Business cust
+#Value
+10
+
+#Class
+Evaluator syslib:_Object
+
+#Method
+AssignInputValues Evaluator
+#Access
+Protected
+#Static
+True
+#Return Type
+
+#Method Body
+// Assign the screen values to the static instance of each of the classes
+var str is string
+
+
+// Customer Assignments
+Decode(cust.Bankruptcies,pApp.twNbrBankruptcies.GetText)
+Decode(cust.Years_At_Current_Address,pApp.twYearsAtCurrentAddr.GetText)
+Decode(cust.Years_In_Business,pApp.twYearsInBusiness.GetText)
+
+// Property Assignments
+prop.Construction = pApp.coTypeOfConstruction.selection
+Decode(prop.priorLosses, pApp.twPriorLosses.getText)
+Decode(prop.age, pApp.twAgeOfProperty.getText)
+Decode(prop.value, pApp.twPropertyValue.getText)
+
+// Coverage Assignments
+cvg.CoverageType 	 = pApp.coTypeOfCoverage.selection
+cvg.CoverageIndustry = pApp.coCoverageIndustry.selection
+
+#Method
+evaluate Evaluator
+#Comment
+This is the method that contains the inference block that uses the rules that solve the problem
+#Static
+True
+#Return Type
+string
+#Method Body
+
+AssignInputValues()
+
+INFER
+  	rulesAboutFinancialStability()
+  	rulesAboutPropertyRisk()
+  	rulesAboutCoverage()
+	rulesAboutPricingTier()
+    Forwardchain()
+
+END
+
+return (pt.pricingTier)
+#User Tags
+PP_PPLUS = editonly "3B117F250000007F00000002"
+
+
+#Class
+Pricing_Tier syslib:_Object
+
+#Attribute
+pricingTier Pricing_Tier
+#Comment
+A, B, C or refer or reject
+#Type
+string
+#Initial Value
+NULL
+#User Tags
+PP_PPLUS = editonly "3B117F250000007000000002"
+
+
+#Method
+RulesAboutPricingTier Pricing_Tier
+#Static
+True
+#Return Type
+
+#Method Body
+rule "R1 Poor"
+ifrule cust.FinancialStability = "Poor"
+then
+	pt.PricingTier = "Reject"
+end
+
+rule "R2 Average,Low"
+ifrule cust.FinancialStability = "Average"
+   and cvg.CoverageLiability  = "Low"
+then
+	pt.PricingTier = "A"
+end
+
+rule "R3 Average,High"
+ifrule cust.FinancialStability = "Average"
+   and cvg.CoverageLiability  = "High"
+then
+	pt.PricingTier = "Refer"
+end
+
+rule "R4 Average,Med,High"
+ifrule cust.FinancialStability = "Average"
+   and cvg.CoverageLiability  = "Med"
+   and prop.PropertyRisk       = "High"
+then
+	pt.PricingTier = "C"
+end
+
+rule "R5 Average,Med,Med"
+ifrule cust.FinancialStability = "Average"
+   and cvg.CoverageLiability  = "Med"
+   and prop.PropertyRisk       = "Med"
+then
+	pt.PricingTier = "B"
+end
+
+rule "R6 Average,Med,Low"
+ifrule cust.FinancialStability = "Average"
+   and cvg.CoverageLiability  = "Med"
+   and prop.PropertyRisk       = "Low"
+then
+	pt.PricingTier = "B"
+end
+
+rule "R7 Excellent, Low"
+ifrule cust.FinancialStability = "Excellent"
+   and cvg.CoverageLiability  = "Low"
+then
+	pt.PricingTier = "A"
+end
+
+rule "R8 Excellent,Med"
+ifrule cust.FinancialStability = "Excellent"
+   and cvg.CoverageLiability  = "Medium"
+then
+	pt.PricingTier = "B"
+end
+
+rule "R9 Excellent,High"
+ifrule cust.FinancialStability = "Excellent"
+   and cvg.CoverageLiability  = "High"
+then
+	pt.PricingTier = "Refer"
+end
+#User Tags
+PP_PPLUS = editonly "3B117F250000007700000002"
+
+
+#Instance
+pt Pricing_Tier
+
+#Class
+Property syslib:_Object
+
+#Attribute
+age Property
+#Type
+integer
+#Initial Value
+NULL
+#User Tags
+PP_PPLUS = editonly "3B117F250000008900000002"
+
+
+#Attribute
+construction Property
+#Type
+string
+#Initial Value
+NULL
+#User Tags
+PP_PPLUS = editonly "3B117F250000008B00000002"
+
+
+#Attribute
+priorLosses Property
+#Type
+real
+#Initial Value
+NULL
+#User Tags
+PP_PPLUS = editonly "3B117F250000009100000002"
+
+
+#Attribute
+propertyRisk Property
+#Type
+string
+#Initial Value
+
+#User Tags
+PP_PPLUS = editonly "3B117F250000008F00000002"
+
+
+#Attribute
+value Property
+#Type
+real
+#Initial Value
+NULL
+#User Tags
+PP_PPLUS = editonly "3B117F250000008D00000002"
+
+
+#Method
+RulesAboutPropertyRisk Property
+#Static
+True
+#Return Type
+
+#Method Body
+rule "PR1 STRAW"
+ifrule prop.construction = "Straw"
+then
+	prop.propertyRisk = "High"
+end
+
+rule "PR2 STICKS"
+ifrule prop.construction = "Stick"
+   and prop.age < 5
+then
+	prop.propertyRisk = "Medium"
+end
+
+rule "PR3 STICKS"
+ifrule prop.construction = "Stick"
+   and prop.age > 4
+then
+	prop.propertyRisk = "High"
+end
+
+rule "PR4 Bricks"
+ifrule prop.construction = "Brick"
+   and prop.priorLosses < 2000
+   and prop.age <15
+then
+	prop.propertyRisk = "Low"
+end
+
+rule "PR5 Bricks"
+ifrule prop.construction = "Brick"
+   and prop.priorLosses >= 2000
+   and prop.age > 5  and prop.age < 15
+then
+	prop.propertyRisk = "Medium"
+end
+
+rule "PR6 Bricks"
+ifrule prop.construction = "Brick"
+   and prop.priorLosses >= 2000
+   and prop.age > 15
+   and prop.value > 100000
+then
+	prop.propertyRisk = "High"
+end
+
+#User Tags
+PP_PPLUS = editonly "3B117F250000007700000002"
+
+
+#Instance
+prop Property
+
+#Attribute Value
+age prop
+#Value
+3
+
+#Attribute Value
+construction prop
+#Value
+"Brick"
+
+#Attribute Value
+priorLosses prop
+#Value
+1000
+
+#Attribute Value
+value prop
+#Value
+50000
+
+#Class
+AppWindow winlib:StandardWindow
+
+#Attribute
+gb1 AppWindow
+#Type
+GroupBox
+#Initial Value
+NULL
+
+#Attribute
+st1 AppWindow
+#Type
+StaticText
+#Initial Value
+NULL
+
+#Attribute
+st2 AppWindow
+#Type
+StaticText
+#Initial Value
+NULL
+
+#Attribute
+st3 AppWindow
+#Type
+StaticText
+#Initial Value
+NULL
+
+#Attribute
+twName AppWindow
+#Type
+TextWindow
+#Initial Value
+NULL
+
+#Attribute
+twNbrBankruptcies AppWindow
+#Type
+TextWindow
+#Initial Value
+NULL
+
+#Attribute
+twYearsAtCurrentAddr AppWindow
+#Type
+TextWindow
+#Initial Value
+NULL
+
+#Attribute
+st4 AppWindow
+#Type
+StaticText
+#Initial Value
+NULL
+
+#Attribute
+twYearsInBusiness AppWindow
+#Type
+TextWindow
+#Initial Value
+NULL
+
+#Attribute
+gb11 AppWindow
+#Type
+GroupBox
+#Initial Value
+NULL
+
+#Attribute
+st11 AppWindow
+#Type
+StaticText
+#Initial Value
+NULL
+
+#Attribute
+st21 AppWindow
+#Type
+StaticText
+#Initial Value
+NULL
+
+#Attribute
+st31 AppWindow
+#Type
+StaticText
+#Initial Value
+NULL
+
+#Attribute
+twPriorLosses AppWindow
+#Type
+TextWindow
+#Initial Value
+NULL
+
+#Attribute
+twAgeOfProperty AppWindow
+#Type
+TextWindow
+#Initial Value
+NULL
+
+#Attribute
+st41 AppWindow
+#Type
+StaticText
+#Initial Value
+NULL
+
+#Attribute
+twPropertyValue AppWindow
+#Type
+TextWindow
+#Initial Value
+NULL
+
+#Attribute
+gb12 AppWindow
+#Type
+GroupBox
+#Initial Value
+NULL
+
+#Attribute
+st12 AppWindow
+#Type
+StaticText
+#Initial Value
+NULL
+
+#Attribute
+st22 AppWindow
+#Type
+StaticText
+#Initial Value
+NULL
+
+#Attribute
+coTypeOfConstruction AppWindow
+#Type
+ComboBox
+#Initial Value
+NULL
+
+#Attribute
+coTypeOfCoverage AppWindow
+#Type
+ComboBox
+#Initial Value
+NULL
+
+#Attribute
+coCoverageIndustry AppWindow
+#Type
+ComboBox
+#Initial Value
+NULL
+
+#Attribute
+pbGetPricingTier AppWindow
+#Type
+PushButton
+#Initial Value
+NULL
+
+#Attribute
+pbExit AppWindow
+#Type
+PushButton
+#Initial Value
+NULL
+
+#Attribute
+pbClearInputs AppWindow
+#Type
+PushButton
+#Initial Value
+NULL
+
+#Attribute
+pbClearResults AppWindow
+#Type
+PushButton
+#Initial Value
+NULL
+
+#Attribute
+st5 AppWindow
+#Type
+StaticText
+#Initial Value
+NULL
+
+#Attribute
+twPricingTier AppWindow
+#Type
+TextWindow
+#Initial Value
+NULL
+
+#Method
+Create AppWindow
+#Comment
+
+#Access
+Public
+#Silent
+False
+#Disabled
+False
+#No Break
+False
+#Method Type
+Internal
+#DLL
+
+#Procedure Name
+
+#External ID
+0
+#Return Type
+pointer to _system
+#Arguments
+|in name is string = NULL
+#Method Body
+|var pWin pointer to CurrentClass
+
+|pWin = up.Create(name)
+
+|pWin = StandardWindow(BackColor=16777088,Height=212,Title="TLP simple (version 1)",Width=411,X=17,Y=4)
+|pWin.gb1 = GroupBox(Height=80,Position=1,Title="Customer Information",Width=177,X=20,Y=14)
+|pWin.st1 = StaticText(Position=2,Text="Name:",Width=26,X=89,Y=29)
+|pWin.st2 = StaticText(Position=3,Text="Number of Bankruptcies:",Width=85,X=30,Y=41)
+|pWin.st3 = StaticText(Position=4,Text="Years at Current Address:",Width=87,X=28,Y=55)
+|pWin.twName = TextWindow(Position=6,Width=75,X=115,Y=27)
+|pWin.twNbrBankruptcies = TextWindow(Position=7,Width=26,X=115,Y=41)
+|pWin.twYearsAtCurrentAddr = TextWindow(Position=8,Width=27,X=115,Y=55)
+|pWin.st4 = StaticText(Position=9,Text="Years in Business:",Width=65,X=47,Y=71)
+|pWin.twYearsInBusiness = TextWindow(Position=10,Width=27,X=115,Y=70)
+|pWin.gb11 = GroupBox(Height=80,Position=11,Title="Property Information",Width=179,X=20,Y=102)
+|pWin.st11 = StaticText(Position=12,Text="Type of Construction:",Width=71,X=44,Y=117)
+|pWin.st21 = StaticText(Position=13,Text="Prior Losses:",Width=46,X=69,Y=129)
+|pWin.st31 = StaticText(Position=14,Text="Age Of Property:",Width=55,X=60,Y=142)
+|pWin.twPriorLosses = TextWindow(Position=16,Width=40,X=115,Y=129)
+|pWin.twAgeOfProperty = TextWindow(Position=17,Width=27,X=115,Y=143)
+|pWin.st41 = StaticText(Position=18,Text="Property Value:",Width=50,X=62,Y=159)
+|pWin.twPropertyValue = TextWindow(Position=19,Width=39,X=115,Y=158)
+|pWin.gb12 = GroupBox(Height=49,Position=20,Title="Coverage Information",Width=179,X=211,Y=14)
+|pWin.st12 = StaticText(Position=21,Text="Type of Coverage:",Width=64,X=243,Y=29)
+|pWin.st22 = StaticText(Position=22,Text="Coverage Industry:",Width=66,X=240,Y=45)
+|pWin.coTypeOfConstruction = ComboBox(Items=list("Brick","Stick","Straw"),Position=29,X=115,Y=114)
+|pWin.coTypeOfCoverage = ComboBox(Items=list("Malpractice","Building","Content"),Position=30,Width=73,X=310,Y=28)
+|pWin.coCoverageIndustry = ComboBox(Items=list("Medical","Construction","Retail"),Position=31,Width=72,X=310,Y=44)
+|pWin.pbGetPricingTier = PushButton(Position=32,Text="Get Pricing Tier",Width=66,X=210,Y=87)
+|pWin.pbExit = PushButton(Position=33,Text="Exit",Width=62,X=290,Y=86)
+|pWin.pbClearInputs = PushButton(Position=34,Text="Clear Inputs ",Width=67,X=211,Y=67)
+|pWin.pbClearResults = PushButton(Position=35,Text="Clear Results",Width=62,X=289,Y=67)
+|pWin.st5 = StaticText(Position=36,Text="Computed Pricing Tier:",Width=76,X=211,Y=120)
+|pWin.twPricingTier = TextWindow(Position=37,Width=15,X=290,Y=119)
+|return(pWin)
+#Event Method
+False
+#User Tags
+
+
+#Method
+WhenpbExitChosen AppWindow
+#Return Type
+
+#Method Body
+pApp.close
+
+#Method
+FillTestValues AppWindow
+#Static
+True
+#Return Type
+
+#Method Body
+// This methods seeds some values for ease of testing
+
+pApp.twName.SetText("Tom")
+pApp.twNbrBankruptcies.SetText("0")
+pApp.twYearsAtCurrentAddr.SetText("9")
+pApp.twYearsInBusiness.SetText("6")
+
+pApp.coTypeOfConstruction.SelectString("Brick",null)
+pApp.twPriorLosses.SetText("1000")
+pApp.twAgeOfProperty.SetText("3")
+pApp.twPropertyValue.SetText("110000")
+
+pApp.coTypeOfCoverage.SelectString("Malpractice",null)
+pApp.coCoverageIndustry.SelectString("Retail",null)
+
+
+
+
+
+
+#Method
+WhenpbGetPricingTierChosen AppWindow
+#Return Type
+
+#Method Body
+// call the evaluate method passing the values from the Input Screen
+
+var thePricingTier is string
+
+thePricingTier = evaluate()
+
+//Messagebox("The value for PricingTier is " &thePricingTier)
+
+pApp.twPricingTier.SetText(thePricingTier)
